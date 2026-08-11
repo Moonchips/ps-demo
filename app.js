@@ -182,10 +182,7 @@ function addResult(result) {
 
   const state = document.createElement("td");
 
-  const badge = document.createElement("span");
-  badge.textContent = "Available";
-
-  state.appendChild(badge);
+  state.appendChild("Available");
 
   const elapsed = document.createElement("td");
   elapsed.textContent = `${result.elapsed} ms`;

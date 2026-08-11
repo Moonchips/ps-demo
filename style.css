@@ -143,15 +143,6 @@ td {
   opacity: 0.58;
 }
 
-.badge {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-  font-size: 0.78rem;
-  font-weight: 750;
-}
-
 .app-layout {
   display: grid;
   grid-template-columns: 40% 60%;
