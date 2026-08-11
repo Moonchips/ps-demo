@@ -183,8 +183,7 @@ function addResult(result) {
   const state = document.createElement("td");
 
   const badge = document.createElement("span");
-  badge.className = "badge";
-  badge.textContent = "Connection completed";
+  badge.textContent = "Available";
 
   state.appendChild(badge);
 
