@@ -11,6 +11,13 @@ const progress = $("progress");
 // Chrome has shipped this permission under two names; try both.
 const PERMISSION_NAMES = ["local-network", "local-network-access"];
 
+// Chrome only surfaces its Local Network Access prompt when the page actually
+// attempts a local network request — the Permissions API can query the grant
+// but cannot ask for it. Any private address does the job: the grant is scoped
+// to this site rather than to the target, and the prompt fires on the attempt
+// whether or not anything is listening.
+const PERMISSION_PROBE_URL = "http://192.168.1.1/";
+
 let stopRequested = false;
 const activeControllers = new Set();
 
@@ -70,19 +77,49 @@ async function queryPermission() {
   return showPermission("unknown", "Not queryable in this browser");
 }
 
+async function requestPermission() {
+  const state = await queryPermission();
+
+  // "granted" needs nothing, "denied" will not re-prompt, and "unavailable"
+  // means an insecure context where the permission does not apply.
+  if (state !== "prompt" && state !== "unknown") {
+    return state;
+  }
+
+  permissionStatus.textContent = "Requesting…";
+
+  try {
+    // Deliberately not aborted on a timer: while Chrome's prompt is open the
+    // request sits pending, and cancelling it would take the prompt down with
+    // it. The onchange handler registered by queryPermission keeps the status
+    // display live in the meantime.
+    await fetch(PERMISSION_PROBE_URL, {
+      method: "GET",
+      mode: "no-cors",
+      cache: "no-store"
+    });
+  } catch {
+    // Expected — nothing needs to answer for the prompt to have been shown.
+  }
+
+  return queryPermission();
+}
+
 function permissionBlockedMessage(state) {
-  const howTo =
+  const viaSettings =
     "Open Chrome's site settings for this page (the icon to the left of the " +
     "address bar), set Local network access to Allow, then use Refresh status " +
     "and scan again.";
 
   if (state === "denied") {
-    return `Local network access is blocked for this site, so the scan did not start.\n\n${howTo}`;
+    return `Local network access is blocked for this site, so the scan did not start.\n\n${viaSettings}`;
   }
   if (state === "prompt") {
-    return `Local network access has not been granted for this site yet, so the scan did not start.\n\n${howTo}`;
+    return "Local network access has not been granted for this site yet, so " +
+      "the scan did not start.\n\nReload the page to bring Chrome's permission " +
+      `prompt back, or grant it yourself: ${viaSettings}`;
   }
-  return `Local network access could not be confirmed as granted for this site, so the scan did not start.\n\n${howTo}`;
+  return `Local network access could not be confirmed as granted for this site, so the scan did not start.\n\n${viaSettings}`;
 }
 
 function protocolForPort(port) {
@@ -300,4 +337,4 @@ stopButton.addEventListener("click", stopScan);
 clearButton.addEventListener("click", clearResults);
 refreshPermission.addEventListener("click", queryPermission);
 
-queryPermission();
+requestPermission();
