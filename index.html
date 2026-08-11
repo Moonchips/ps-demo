@@ -7,88 +7,144 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="container">
-    <section class="card">
-      <div class="status-row">
-        <div>
-          <span class="label">Chrome permission</span>
+<main class="container">
+
+  <div class="app-layout">
+
+    <!-- LEFT COLUMN -->
+    <div class="left-column">
+      <section class="card">
+        <h2>Scan settings</h2>
+
+        <div class="grid">
+
+          <label>
+            Subnet
+            <input id="subnet"
+                   value="192.168.1"
+                   inputmode="decimal"
+                   placeholder="192.168.1" />
+          </label>
+
+          <label>
+            First host
+            <input id="startHost"
+                   type="number"
+                   min="1"
+                   max="254"
+                   value="1" />
+          </label>
+
+          <label>
+            Last host
+            <input id="endHost"
+                   type="number"
+                   min="1"
+                   max="254"
+                   value="50" />
+          </label>
+
+          <label>
+            Ports
+            <input id="ports"
+                   value="80,8080"
+                   placeholder="80,443,8080" />
+          </label>
+
+          <label>
+            Timeout per probe (ms)
+            <input id="timeout"
+                   type="number"
+                   min="250"
+                   max="10000"
+                   value="1200" />
+          </label>
+
+          <label>
+            Concurrent probes
+            <input id="concurrency"
+                   type="number"
+                   min="1"
+                   max="30"
+                   value="12" />
+          </label>
+
+        </div>
+
+        <div class="actions">
+          <button id="scanButton">Scan selected range</button>
+          <button id="stopButton"
+                  class="secondary"
+                  disabled>
+            Stop
+          </button>
+          <button id="refreshPermission" class="secondary">Refresh Permission</button>
           <div id="permissionStatus" class="status">Checking…</div>
         </div>
-        <button id="refreshPermission" class="secondary">Refresh status</button>
-      </div>
-    </section>
 
-    <section class="card">
-      <h2>Scan settings</h2>
+      </section>
 
-      <div class="grid">
-        <label>
-          Subnet
-          <input id="subnet" value="192.168.1" inputmode="decimal"
-                 placeholder="192.168.1" />
-        </label>
 
-        <label>
-          First host
-          <input id="startHost" type="number" min="1" max="254" value="1" />
-        </label>
+      <section class="card">
 
-        <label>
-          Last host
-          <input id="endHost" type="number" min="1" max="254" value="50" />
-        </label>
+        <div class="results-header">
+          <div>
+            <h2>Reachable local web services</h2>
+            <p id="progress" class="help">No scan started.</p>
+          </div>
 
-        <label>
-          Ports
-          <input id="ports" value="80,8080" placeholder="80,443,8080" />
-        </label>
-
-        <label>
-          Timeout per probe (ms)
-          <input id="timeout" type="number" min="250" max="10000" value="1200" />
-        </label>
-
-        <label>
-          Concurrent probes
-          <input id="concurrency" type="number" min="1" max="30" value="12" />
-        </label>
-      </div>
-
-      <div class="actions">
-        <button id="scanButton">Scan selected range</button>
-        <button id="stopButton" class="secondary" disabled>Stop</button>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="results-header">
-        <div>
-          <h2>Reachable local web services</h2>
-          <p id="progress" class="help">No scan started.</p>
+          <button id="clearButton"
+                  class="secondary">
+            Clear
+          </button>
         </div>
-        <button id="clearButton" class="secondary">Clear</button>
-      </div>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>IP address</th>
-              <th>Port</th>
-              <th>Protocol</th>
-              <th>Result</th>
-              <th>Probe time</th>
-            </tr>
-          </thead>
-          <tbody id="results">
-            <tr id="emptyRow">
-              <td colspan="5" class="empty">No responsive services found yet.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+        <div class="table-wrap">
+
+          <table>
+
+            <thead>
+              <tr>
+                <th>IP address</th>
+                <th>Port</th>
+                <th>Protocol</th>
+                <th>Result</th>
+                <th>Probe time</th>
+                <th>Web UI</th>
+              </tr>
+            </thead>
+
+            <tbody id="results">
+
+              <tr id="emptyRow">
+                <td colspan="6"
+                    class="empty">
+                  No responsive services found yet.
+                </td>
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <div class="right-column">
+
+      <iframe
+        id="deviceFrame"
+        title="Device Web Interface">
+      </iframe>
+
+    </div>
+
+  </div>
+
+</main>
 
   <script src="app.js"></script>
 </body>

@@ -7,6 +7,7 @@ const stopButton = $("stopButton");
 const clearButton = $("clearButton");
 const resultsBody = $("results");
 const progress = $("progress");
+const deviceFrame = $("deviceFrame");
 
 // Chrome has shipped this permission under two names; try both.
 const PERMISSION_NAMES = ["local-network", "local-network-access"];
@@ -180,24 +181,55 @@ function addResult(result) {
   protocol.textContent = result.protocol.toUpperCase();
 
   const state = document.createElement("td");
+
   const badge = document.createElement("span");
   badge.className = "badge";
   badge.textContent = "Connection completed";
+
   state.appendChild(badge);
 
   const elapsed = document.createElement("td");
   elapsed.textContent = `${result.elapsed} ms`;
 
-  row.append(ip, port, protocol, state, elapsed);
+
+  // Web interface button
+  const webInterface = document.createElement("td");
+
+  const openButton = document.createElement("button");
+  openButton.textContent = "Open";
+
+  openButton.addEventListener("click", () => {
+
+    const url =
+      `${result.protocol}://${result.ip}:${result.port}/`;
+
+    deviceFrame.src = url;
+
+  });
+
+  webInterface.appendChild(openButton);
+
+
+  row.append(
+    ip,
+    port,
+    protocol,
+    state,
+    elapsed,
+    webInterface
+  );
+
   resultsBody.appendChild(row);
 }
 
 function clearResults() {
   resultsBody.innerHTML = `
     <tr id="emptyRow">
-      <td colspan="5" class="empty">No responsive services found yet.</td>
+      <td colspan="6" class="empty">No responsive services found yet.</td>
     </tr>`;
+
   progress.textContent = "No scan started.";
+  deviceFrame.src = "about:blank";
 }
 
 async function runPool(tasks, concurrency, onResult) {

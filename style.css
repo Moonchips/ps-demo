@@ -15,8 +15,11 @@ body {
 }
 
 .container {
-  width: min(1050px, calc(100% - 32px));
-  margin: 36px auto 64px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 h2 {
@@ -32,7 +35,6 @@ h2 {
   background: color-mix(in srgb, CanvasText 3%, Canvas);
 }
 
-.status-row,
 .results-header,
 .actions {
   display: flex;
@@ -47,12 +49,6 @@ h2 {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   opacity: 0.65;
-}
-
-.status {
-  font-size: 1.2rem;
-  font-weight: 750;
-  margin-top: 4px;
 }
 
 .grid {
@@ -156,8 +152,35 @@ td {
   font-weight: 750;
 }
 
+.app-layout {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: 20px;
+  width: 100%;
+}
+
+.left-column {
+  min-width: 0;
+}
+
+.right-column {
+  min-width: 0;
+}
+
+#deviceFrame {
+  width: 100%;
+  height: calc(100vh - 40px);
+  border: 1px solid #444;
+  background-color: #1e1e1e;
+}
+
+@media (max-width: 900px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 600px) {
-  .status-row,
   .results-header {
     align-items: flex-start;
     flex-direction: column;
