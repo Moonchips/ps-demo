@@ -8,8 +8,11 @@ const clearButton = $("clearButton");
 const resultsBody = $("results");
 const progress = $("progress");
 
+// Chrome has shipped this permission under two names; try both.
+const PERMISSION_NAMES = ["local-network", "local-network-access"];
+
 let stopRequested = false;
-let activeControllers = new Set();
+const activeControllers = new Set();
 
 function validateSubnet(value) {
   const parts = value.trim().split(".");
@@ -37,33 +40,49 @@ function parsePorts(value) {
   return ports;
 }
 
+function showPermission(state, text) {
+  permissionStatus.textContent = text;
+  return state;
+}
+
 async function queryPermission() {
   if (!window.isSecureContext) {
-    permissionStatus.textContent = "Unavailable. Page is not a secure context";
-    return "unavailable";
+    return showPermission("unavailable", "Unavailable. Page is not a secure context");
   }
 
   if (!navigator.permissions?.query) {
-    permissionStatus.textContent = "Permissions API unavailable";
-    return "unknown";
+    return showPermission("unknown", "Permissions API unavailable");
   }
 
-  for (const name of ["local-network", "local-network-access"]) {
+  for (const name of PERMISSION_NAMES) {
+    let result;
     try {
-      const result = await navigator.permissions.query({ name });
-      permissionStatus.textContent = `${result.state} (${name})`;
-      result.onchange = () => {
-        permissionStatus.textContent = `${result.state} (${name})`;
-      };
-      return result.state;
-    } catch (_) {
-
+      result = await navigator.permissions.query({ name });
+    } catch {
+      continue; // This Chrome build does not recognize this permission name.
     }
+
+    result.onchange = () =>
+      showPermission(result.state, `${result.state} (${name})`);
+    return showPermission(result.state, `${result.state} (${name})`);
   }
 
-  permissionStatus.textContent =
-    "Not queryable here a local request may still trigger Chrome's prompt";
-  return "unknown";
+  return showPermission("unknown", "Not queryable in this browser");
+}
+
+function permissionBlockedMessage(state) {
+  const howTo =
+    "Open Chrome's site settings for this page (the icon to the left of the " +
+    "address bar), set Local network access to Allow, then use Refresh status " +
+    "and scan again.";
+
+  if (state === "denied") {
+    return `Local network access is blocked for this site, so the scan did not start.\n\n${howTo}`;
+  }
+  if (state === "prompt") {
+    return `Local network access has not been granted for this site yet, so the scan did not start.\n\n${howTo}`;
+  }
+  return `Local network access could not be confirmed as granted for this site, so the scan did not start.\n\n${howTo}`;
 }
 
 function protocolForPort(port) {
@@ -94,14 +113,13 @@ async function probe(ip, port, timeoutMs) {
       reachable: true,
       elapsed: Math.round(performance.now() - started)
     };
-  } catch (error) {
+  } catch {
     return {
       ip,
       port,
       protocol,
       reachable: false,
-      elapsed: Math.round(performance.now() - started),
-      error: error?.name || "NetworkError"
+      elapsed: Math.round(performance.now() - started)
     };
   } finally {
     clearTimeout(timer);
@@ -154,7 +172,7 @@ async function runPool(tasks, concurrency, onResult) {
       if (index >= tasks.length) return;
 
       const result = await tasks[index]();
-      onResult(result, index);
+      onResult(result);
     }
   }
 
@@ -169,16 +187,28 @@ async function runPool(tasks, concurrency, onResult) {
 async function startScan() {
   stopRequested = false;
 
+  if (!window.isSecureContext) {
+    alert("Host this page over HTTPS. Chrome's Local Network Access permission is restricted to secure contexts.");
+    return;
+  }
+
+  // Re-check at click time: the permission may have changed since page load.
+  // The button stays disabled for the duration so a second click cannot slip
+  // through while the query is in flight.
+  scanButton.disabled = true;
+  const permission = await queryPermission();
+  scanButton.disabled = false;
+
+  if (permission !== "granted") {
+    alert(permissionBlockedMessage(permission));
+    return;
+  }
+
   const subnet = $("subnet").value.trim();
   const first = Number($("startHost").value);
   const last = Number($("endHost").value);
   const timeoutMs = Number($("timeout").value);
   const concurrency = Number($("concurrency").value);
-
-  if (!window.isSecureContext) {
-    alert("Host this page over HTTPS. Chrome's Local Network Access permission is restricted to secure contexts.");
-    return;
-  }
 
   if (!validateSubnet(subnet)) {
     alert("Subnet must look like 192.168.1");
