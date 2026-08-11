@@ -191,32 +191,24 @@ function addResult(result) {
   const elapsed = document.createElement("td");
   elapsed.textContent = `${result.elapsed} ms`;
 
+
+  // Web interface button
   const webInterface = document.createElement("td");
 
-  const frameButton = document.createElement("button");
-  frameButton.textContent = "Embed";
+  const openButton = document.createElement("button");
+  openButton.textContent = "Open";
 
-  frameButton.addEventListener("click", () => {
+  openButton.addEventListener("click", () => {
+
     const url =
       `${result.protocol}://${result.ip}:${result.port}/`;
 
     deviceFrame.src = url;
+
   });
 
+  webInterface.appendChild(openButton);
 
-  const newTabButton = document.createElement("button");
-  newTabButton.textContent = "Open";
-
-  newTabButton.addEventListener("click", () => {
-    const url =
-      `${result.protocol}://${result.ip}:${result.port}/`;
-
-    window.open(url, "_blank", "noopener,noreferrer");
-  });
-
-
-  webInterface.appendChild(frameButton);
-  webInterface.appendChild(newTabButton);
 
   row.append(
     ip,
