@@ -131,9 +131,16 @@ async function probe(ip, port, timeoutMs) {
   const protocol = protocolForPort(port);
   const url = `${protocol}://${ip}:${port}/`;
   const controller = new AbortController();
+
   activeControllers.add(controller);
 
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+
   const started = performance.now();
 
   try {
@@ -149,16 +156,46 @@ async function probe(ip, port, timeoutMs) {
       port,
       protocol,
       reachable: true,
+      rejected: false,
+      timedOut: false,
+      status: "Available",
       elapsed: Math.round(performance.now() - started)
     };
-  } catch {
+
+  } catch (error) {
+
+    /*
+     * If our timer caused the abort, treat it as "No response".
+     *
+     * Anything else failed before the timeout. This includes things such as
+     * browser policy rejection, CORS/LNA rejection, connection refusal,
+     * TLS failure, etc.
+     */
+    if (timedOut || error?.name === "AbortError") {
+      return {
+        ip,
+        port,
+        protocol,
+        reachable: false,
+        rejected: false,
+        timedOut: true,
+        status: "No response",
+        elapsed: Math.round(performance.now() - started)
+      };
+    }
+
     return {
       ip,
       port,
       protocol,
       reachable: false,
+      rejected: true,
+      timedOut: false,
+      status: "Rejected / blocked",
+      errorName: error?.name || "NetworkError",
       elapsed: Math.round(performance.now() - started)
     };
+
   } finally {
     clearTimeout(timer);
     activeControllers.delete(controller);
@@ -183,7 +220,14 @@ function addResult(result) {
   const state = document.createElement("td");
 
   const badge = document.createElement("span");
-  badge.textContent = "Available";
+
+  if (result.reachable) {
+    badge.textContent = "Available";
+    badge.className = "badge available";
+  } else {
+    badge.textContent = "Rejected / blocked";
+    badge.className = "badge rejected";
+  }
 
   state.appendChild(badge);
 
@@ -326,19 +370,29 @@ async function startScan() {
 
   let completed = 0;
   let reachable = 0;
+  let rejected = 0;
   progress.textContent =
     `Starting ${tasks.length} connection probes.`;
 
   try {
     await runPool(tasks, concurrency, (result) => {
       completed++;
+
       if (result.reachable) {
+
         reachable++;
         addResult(result);
+
+      } else if (result.rejected) {
+
+        rejected++;
+        addResult(result);
+
       }
 
       progress.textContent =
-        `${completed}/${tasks.length} probes completed — ${reachable} reachable service${reachable === 1 ? "" : "s"} found.`;
+        `${completed}/${tasks.length} probes completed — ` +
+        `${reachable} available, ${rejected} rejected/blocked.`;
     });
   } finally {
     scanButton.disabled = false;
@@ -347,9 +401,9 @@ async function startScan() {
 
     if (stopRequested) {
       progress.textContent += " Scan stopped.";
-    } else if (!reachable) {
+    } else if (!reachable && !rejected) {
       progress.textContent +=
-        " No selected HTTP/HTTPS services responded; this does not mean no devices exist.";
+        " No selected HTTP/HTTPS services responded.";
     }
   }
 }

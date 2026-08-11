@@ -165,6 +165,14 @@ td {
   background-color: #1e1e1e;
 }
 
+.badge.available {
+  color: #6ee7a0;
+}
+
+.badge.rejected {
+  color: #ffb86c;
+}
+
 @media (max-width: 900px) {
   .app-layout {
     grid-template-columns: 1fr;
